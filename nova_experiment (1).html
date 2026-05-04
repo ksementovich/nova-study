@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Nova Study</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+body {
+  background:#f2f2f7;
+  font-family:-apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+  display:flex; justify-content:center; min-height:100vh;
+}
+
+#app {
+  width:100%; max-width:390px; min-height:100vh;
+  background:white; position:relative;
+  display:flex; flex-direction:column; overflow:hidden;
+}
+
+.status-bar {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:14px 20px 8px; font-size:12px; font-weight:600;
+  flex-shrink:0; color:#1c1c1e;
+}
+
+.screen { display:none; flex:1; flex-direction:column; overflow-y:auto; }
+.screen.active { display:flex; }
+
+/* ── Welcome ── */
+#screen-welcome {
+  justify-content:center; align-items:center;
+  padding:40px 32px; text-align:center;
+}
+.nova-logo {
+  width:80px; height:80px; background:#007AFF; border-radius:20px;
+  display:flex; align-items:center; justify-content:center;
+  margin:0 auto 24px; font-size:36px; color:white; font-weight:800;
+}
+.welcome-title { font-size:26px; font-weight:700; color:#1c1c1e; margin-bottom:12px; }
+.welcome-sub { font-size:15px; color:#6e6e73; line-height:1.7; margin-bottom:40px; }
+
+/* ── Buttons ── */
+.btn {
+  border:none; border-radius:14px; padding:16px;
+  font-size:17px; font-weight:600; cursor:pointer;
+  width:100%; transition:opacity .15s;
+}
+.btn:active { opacity:.8; }
+.btn-blue { background:#007AFF; color:white; }
+.btn-gray { background:#f2f2f7; color:#007AFF; margin-top:12px; }
+
+/* ── ASRS ── */
+#screen-asrs { padding:28px 20px; }
+.section-title { font-size:22px; font-weight:700; color:#1c1c1e; margin-bottom:8px; }
+.section-sub { font-size:14px; color:#6e6e73; line-height:1.6; margin-bottom:24px; }
+.progress-bar { height:4px; background:#e5e5ea; border-radius:2px; margin-bottom:32px; }
+.progress-fill { height:100%; background:#007AFF; border-radius:2px; transition:width .35s; }
+.q-body { font-size:16px; font-weight:500; color:#1c1c1e; line-height:1.55; margin-bottom:24px; }
+.options-list { display:flex; flex-direction:column; gap:10px; }
+.opt-btn {
+  padding:14px 16px; border:1.5px solid #e5e5ea; border-radius:12px;
+  font-size:15px; cursor:pointer; color:#1c1c1e; background:white;
+  text-align:left; transition:all .15s;
+}
+.opt-btn.selected { background:#e8f3ff; border-color:#007AFF; color:#007AFF; }
+.next-row { margin-top:24px; }
+
+/* ── Instructions ── */
+#screen-instructions { padding:28px 20px; justify-content:space-between; }
+.inst-list { display:flex; flex-direction:column; gap:20px; margin-bottom:8px; }
+.inst-row { display:flex; gap:14px; align-items:flex-start; }
+.inst-num {
+  width:30px; height:30px; background:#007AFF; border-radius:50%;
+  color:white; font-weight:700; font-size:14px;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.inst-text { font-size:15px; color:#3a3a3c; line-height:1.6; padding-top:4px; }
+.inst-footer { padding-top:24px; }
+
+/* ── Trial / Chat ── */
+#screen-trial { position:relative; overflow:hidden; }
+.trial-bar { height:3px; background:#e5e5ea; flex-shrink:0; }
+.trial-fill { height:100%; background:#007AFF; transition:width .5s; }
+
+.chat-header {
+  background:white; border-bottom:.5px solid #e5e5ea;
+  padding:10px 16px 12px; display:flex; align-items:center;
+  gap:12px; flex-shrink:0;
+}
+.chat-avatar {
+  width:36px; height:36px; background:#007AFF; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  color:white; font-weight:700; font-size:16px;
+}
+.chat-name { font-weight:600; font-size:16px; color:#1c1c1e; }
+.chat-online { font-size:12px; color:#34c759; }
+
+.chat-body {
+  flex:1; overflow-y:auto; padding:16px 16px 90px;
+  display:flex; flex-direction:column; gap:8px;
+}
+.msg {
+  max-width:80%; background:#e5e5ea; border-radius:18px 18px 18px 4px;
+  padding:10px 14px; font-size:15px; color:#1c1c1e; line-height:1.55;
+  opacity:0; transform:translateY(6px);
+  animation:msgIn .3s ease forwards;
+}
+@keyframes msgIn { to { opacity:1; transform:none; } }
+
+.chat-bar {
+  position:absolute; bottom:0; left:0; right:0;
+  background:white; border-top:.5px solid #e5e5ea;
+  padding:10px 14px; display:flex; align-items:center; gap:10px;
+}
+.chat-input-fake {
+  flex:1; background:#f2f2f7; border-radius:20px;
+  padding:9px 14px; font-size:15px; color:#a9a9ae;
+}
+.chat-send-btn {
+  width:32px; height:32px; background:#007AFF; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  color:white; font-size:14px; opacity:.35;
+}
+
+/* ── Notification Banner ── */
+#notif-banner {
+  position:absolute; top:-110px; left:10px; right:10px;
+  background:rgba(255,255,255,.97);
+  border-radius:14px; padding:12px 14px;
+  box-shadow:0 6px 24px rgba(0,0,0,.14);
+  display:flex; align-items:center; gap:10px;
+  cursor:pointer; z-index:100;
+  transition:top .4s cubic-bezier(.25,.46,.45,.94);
+}
+#notif-banner.show { top:10px; }
+
+.notif-icon {
+  width:36px; height:36px; border-radius:8px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:17px; font-weight:700; color:white; flex-shrink:0;
+}
+.notif-content { flex:1; min-width:0; }
+.notif-app { font-size:11px; color:#6e6e73; font-weight:600; text-transform:uppercase; letter-spacing:.04em; }
+.notif-msg { font-size:14px; color:#1c1c1e; font-weight:500; margin-top:1px; }
+.notif-badge {
+  font-size:11px; font-weight:700; color:white;
+  min-width:20px; height:20px; border-radius:10px; padding:0 5px;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+
+@keyframes pulse {
+  0%,100% { box-shadow:0 6px 24px rgba(0,0,0,.14), 0 0 0 0 rgba(255,59,48,.35); }
+  50%      { box-shadow:0 6px 24px rgba(0,0,0,.14), 0 0 0 5px rgba(255,59,48,.0); }
+}
+#notif-banner.urgent { animation:pulse 1.4s ease-in-out infinite; }
+
+/* ── Question ── */
+#screen-question { padding:32px 24px; }
+.q-tag { font-size:11px; font-weight:700; color:#007AFF; text-transform:uppercase; letter-spacing:.05em; margin-bottom:12px; }
+.q-title { font-size:20px; font-weight:700; color:#1c1c1e; line-height:1.4; margin-bottom:28px; }
+.q-opts { display:flex; flex-direction:column; gap:12px; }
+.q-opt {
+  padding:16px; border:1.5px solid #e5e5ea; border-radius:12px;
+  font-size:16px; cursor:pointer; color:#1c1c1e; background:white;
+  text-align:left; transition:all .15s;
+}
+.q-opt.correct { background:#d1fae5; border-color:#10b981; color:#065f46; }
+.q-opt.wrong   { background:#fee2e2; border-color:#ef4444; color:#991b1b; }
+.q-opt:disabled { cursor:default; }
+
+/* ── Rating ── */
+#screen-rating {
+  justify-content:center; align-items:center;
+  padding:40px 28px; text-align:center;
+}
+.rating-title { font-size:21px; font-weight:700; color:#1c1c1e; margin-bottom:10px; }
+.rating-sub { font-size:15px; color:#6e6e73; line-height:1.6; margin-bottom:36px; }
+.rating-row { display:flex; gap:6px; justify-content:center; margin-bottom:10px; }
+.r-btn {
+  width:38px; height:38px; border:1.5px solid #e5e5ea;
+  border-radius:50%; background:white; font-size:15px; font-weight:600;
+  color:#3a3a3c; cursor:pointer; transition:all .15s;
+}
+.r-btn.sel { background:#007AFF; border-color:#007AFF; color:white; }
+.rating-labels {
+  display:flex; justify-content:space-between; width:100%;
+  font-size:11px; color:#a9a9ae; margin-bottom:32px;
+}
+
+/* ── End ── */
+#screen-end {
+  justify-content:center; align-items:center;
+  padding:48px 32px; text-align:center;
+}
+.end-check {
+  width:80px; height:80px; background:#34c759; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  margin:0 auto 28px; font-size:36px; color:white;
+}
+.end-title { font-size:26px; font-weight:700; color:#1c1c1e; margin-bottom:12px; }
+.end-sub { font-size:15px; color:#6e6e73; line-height:1.7; margin-bottom:40px; }
+.end-note { font-size:13px; color:#a9a9ae; margin-top:16px; line-height:1.5; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="status-bar">
+    <span id="clock">9:41</span>
+    <span style="letter-spacing:.04em">●●● WiFi 🔋</span>
+  </div>
+
+  <!-- ══ WELCOME ══ -->
+  <div class="screen active" id="screen-welcome">
+    <div class="nova-logo">N</div>
+    <div class="welcome-title">Nova Research</div>
+    <div class="welcome-sub">
+      Пройди короткий тест и узнай свой уровень симптомов СДВГ.<br><br>Заодно поучаствуешь в научном исследовании о поведении в мобильных приложениях. Займёт 5–10 минут. Все данные анонимны.
+    </div>
+    <button class="btn btn-blue" onclick="showScreen('asrs')">Начать</button>
+  </div>
+
+  <!-- ══ ASRS ══ -->
+  <div class="screen" id="screen-asrs">
+    <div class="section-title">Несколько вопросов</div>
+    <div class="section-sub">Отвечайте исходя из последних 6 месяцев. Нет правильных и неправильных ответов.</div>
+    <div class="progress-bar"><div class="progress-fill" id="asrs-prog" style="width:0%"></div></div>
+    <div class="q-body" id="asrs-q"></div>
+    <div class="options-list" id="asrs-opts"></div>
+    <div class="next-row"><button class="btn btn-blue" id="asrs-next" onclick="nextAsrs()" style="display:none">Далее</button></div>
+  </div>
+
+  <!-- ══ INSTRUCTIONS ══ -->
+  <div class="screen" id="screen-instructions">
+    <div>
+      <div class="section-title" style="margin-bottom:24px">Как это работает</div>
+      <div class="inst-list">
+        <div class="inst-row"><div class="inst-num">1</div><div class="inst-text">Вы будете читать короткие тексты в интерфейсе чата Nova</div></div>
+        <div class="inst-row"><div class="inst-num">2</div><div class="inst-text">Во время чтения может появляться уведомление — реагируйте так, как обычно</div></div>
+        <div class="inst-row"><div class="inst-num">3</div><div class="inst-text">После каждого текста будет короткий вопрос на понимание</div></div>
+        <div class="inst-row"><div class="inst-num">4</div><div class="inst-text">Всего 15 текстов. В конце — три коротких вопроса об уведомлениях</div></div>
+      </div>
+    </div>
+    <div class="inst-footer">
+      <button class="btn btn-blue" onclick="startExp()">Понятно, начнём</button>
+    </div>
+  </div>
+
+  <!-- ══ TRIAL ══ -->
+  <div class="screen" id="screen-trial">
+    <div class="trial-bar"><div class="trial-fill" id="trial-prog"></div></div>
+
+    <div id="notif-banner">
+      <div class="notif-icon" id="n-icon"></div>
+      <div class="notif-content">
+        <div class="notif-app">Nova</div>
+        <div class="notif-msg" id="n-msg"></div>
+      </div>
+      <div class="notif-badge" id="n-badge" style="display:none"></div>
+    </div>
+
+    <div class="chat-header">
+      <div class="chat-avatar">А</div>
+      <div>
+        <div class="chat-name">Анна</div>
+        <div class="chat-online">в сети</div>
+      </div>
+    </div>
+    <div class="chat-body" id="chat-body"></div>
+    <div class="chat-bar">
+      <div class="chat-input-fake">Написать сообщение…</div>
+      <div class="chat-send-btn">▶</div>
+    </div>
+  </div>
+
+  <!-- ══ QUESTION ══ -->
+  <div class="screen" id="screen-question">
+    <div class="q-tag">Вопрос по тексту</div>
+    <div class="q-title" id="q-title"></div>
+    <div class="q-opts" id="q-opts"></div>
+  </div>
+
+  <!-- ══ RATING ══ -->
+  <div class="screen" id="screen-rating">
+    <div class="rating-title" id="r-title">Последний шаг</div>
+    <div class="rating-sub" id="r-sub" style="margin-bottom:20px;"></div>
+    <div id="r-preview" style="width:100%;margin-bottom:28px;"></div>
+    <div class="rating-row" id="r-row"></div>
+    <div class="rating-labels"><span>совсем не хотел</span><span>очень хотел</span></div>
+    <button class="btn btn-blue" id="r-next" onclick="submitRating()" style="display:none">Продолжить</button>
+  </div>
+
+  <!-- ══ END ══ -->
+  <div class="screen" id="screen-end">
+    <div style="padding:32px 24px 40px;">
+
+      <div style="text-align:center;margin-bottom:32px;">
+        <div class="end-check">✓</div>
+        <div class="end-title">Готово!</div>
+        <div class="end-sub">Исследование завершено. Ниже — ваши результаты по шкале ASRS.</div>
+      </div>
+
+      <!-- ASRS result card -->
+      <div id="asrs-result-card" style="background:#f2f2f7;border-radius:16px;padding:24px;margin-bottom:24px;">
+        <div style="font-size:13px;font-weight:600;color:#6e6e73;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Ваш результат ASRS</div>
+        <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:16px;">
+          <span id="asrs-score-num" style="font-size:48px;font-weight:700;color:#1c1c1e;line-height:1;"></span>
+          <span style="font-size:18px;color:#6e6e73;">/ 24</span>
+        </div>
+
+        <!-- Score bar -->
+        <div style="height:10px;background:#e5e5ea;border-radius:5px;margin-bottom:20px;position:relative;">
+          <div id="asrs-bar" style="height:100%;border-radius:5px;transition:width .8s ease;width:0%;"></div>
+          <!-- threshold marker at score 14 = 58.3% -->
+          <div style="position:absolute;top:-4px;left:58.3%;width:2px;height:18px;background:#1c1c1e;border-radius:1px;"></div>
+        </div>
+
+        <div id="asrs-label" style="font-size:17px;font-weight:600;margin-bottom:8px;"></div>
+        <div id="asrs-desc" style="font-size:14px;color:#3a3a3c;line-height:1.6;"></div>
+
+        <div style="margin-top:16px;padding-top:16px;border-top:1px solid #e5e5ea;font-size:12px;color:#a9a9ae;line-height:1.6;">
+          ASRS — скрининговый инструмент ВОЗ. Результат не является медицинским диагнозом. При наличии вопросов обратитесь к специалисту.
+        </div>
+      </div>
+
+      <div id="send-status" style="font-size:15px;color:#6e6e73;margin-top:8px;text-align:center;"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════
+//  CONTENT
+// ══════════════════════════════════════════
+
+const ASRS = [
+  "Как часто вам трудно завершить последние детали проекта, когда самая интересная часть уже сделана?",
+  "Как часто вам трудно организоваться, когда нужно выполнить задачу, требующую порядка?",
+  "Как часто вам трудно помнить о встречах или обязательствах?",
+  "Когда нужно выполнить скучную задачу, как часто вы избегаете или откладываете её начало?",
+  "Как часто вы ёрзаете или вертите что-то в руках, когда приходится долго сидеть?",
+  "Как часто вы чувствуете себя излишне активным, как будто вас «заводит мотор изнутри»?"
+];
+const ASRS_OPTS = ["Никогда","Редко","Иногда","Часто","Очень часто"];
+
+const TEXTS = [
+  {
+    msgs:["Арктический океан — наименьший из всех океанов Земли.","Большую часть года его поверхность покрыта льдом.","Температура воды здесь редко поднимается выше нуля градусов.","Несмотря на суровый климат, здесь обитают белые медведи, тюлени и нарвалы."],
+    q:"Какая температура воды в Арктическом океане?",
+    opts:["Около 20°C","Редко выше 0°C","Около 10°C","Постоянно меняется"],
+    ans:1
+  },
+  {
+    msgs:["Кофе выращивают в тропическом поясе, который называют «Кофейным поясом».","Растение любит влажный климат и высоты от 600 до 2000 метров.","Крупнейшие производители — Бразилия и Вьетнам.","Для созревания одной кофейной ягоды требуется около девяти месяцев."],
+    q:"Где выращивают кофе?",
+    opts:["В пустынях","В тундре","В тропическом поясе","В арктических регионах"],
+    ans:2
+  },
+  {
+    msgs:["Бумагу изобрели в Китае около двух тысяч лет назад.","До этого писали на глиняных табличках, папирусе и пергаменте.","Секрет производства бумаги долгое время хранился в тайне.","В Европу технология попала лишь в XII веке."],
+    q:"Где была изобретена бумага?",
+    opts:["В Египте","В Европе","В Индии","В Китае"],
+    ans:3
+  },
+  {
+    msgs:["Пчёлы — одни из самых важных опылителей на планете.","Одна пчела за всю жизнь производит лишь чайную ложку мёда.","В улье может жить от 20 до 80 тысяч пчёл.","Пчёлы общаются друг с другом с помощью специальных танцев."],
+    q:"Как пчёлы общаются между собой?",
+    opts:["Звуками","Запахами","Танцами","Прикосновениями"],
+    ans:2
+  },
+  {
+    msgs:["Сахара — крупнейшая жаркая пустыня мира, её площадь сопоставима с территорией США.","Вопреки распространённому мнению, большая часть Сахары — не песок, а камень.","Ночью температура здесь может опускаться ниже нуля.","Дожди в Сахаре бывают, но очень редко — раз в несколько лет."],
+    q:"Из чего в основном состоит поверхность Сахары?",
+    opts:["Из песка","Из камня","Из глины","Из соли"],
+    ans:1
+  },
+  {
+    msgs:["Александр Белл запатентовал телефон в 1876 году.","Первые слова, переданные по телефону, были адресованы его ассистенту.","Поначалу телефон воспринимался как игрушка, а не серьёзный инструмент.","Сейчас в мире насчитывается более пяти миллиардов владельцев смартфонов."],
+    q:"В каком году Белл запатентовал телефон?",
+    opts:["1856","1876","1896","1906"],
+    ans:1
+  },
+  {
+    msgs:["Бамбук — одно из самых быстрорастущих растений на Земле.","Некоторые виды вырастают на 90 сантиметров за сутки.","По прочности бамбук сопоставим со сталью.","В Азии его используют в строительстве, кулинарии и производстве тканей."],
+    q:"На сколько может вырасти бамбук за сутки?",
+    opts:["На 9 см","На 90 см","На 9 м","На 900 см"],
+    ans:1
+  },
+  {
+    msgs:["Луна — единственный естественный спутник Земли.","Её поверхность покрыта кратерами от метеоритов.","Луна влияет на приливы и отливы океанов.","Расстояние от Земли до Луны составляет около 384 тысяч километров."],
+    q:"На что влияет Луна?",
+    opts:["На погоду","На приливы и отливы","На температуру воздуха","На магнитное поле"],
+    ans:1
+  },
+  {
+    msgs:["Шоколад производят из бобов какао, которые растут в тропиках.","Ацтеки использовали какао как напиток задолго до европейцев.","Тёмный шоколад содержит больше какао, чем молочный.","Швейцария считается мировым лидером по потреблению шоколада на душу населения."],
+    q:"Кто использовал какао ещё до европейцев?",
+    opts:["Египтяне","Ацтеки","Китайцы","Греки"],
+    ans:1
+  },
+  {
+    msgs:["Осьминоги — одни из самых умных беспозвоночных на планете.","У них три сердца и голубая кровь.","Осьминоги могут менять цвет и текстуру кожи за долю секунды.","Продолжительность жизни большинства видов составляет всего 1–2 года."],
+    q:"Сколько сердец у осьминога?",
+    opts:["Одно","Два","Три","Четыре"],
+    ans:2
+  },
+  {
+    msgs:["Великая Китайская стена — одно из крупнейших архитектурных сооружений в мире.","Её строительство продолжалось более двух тысяч лет.","Общая длина стены со всеми ответвлениями превышает 21 тысячу километров.","Вопреки мифу, стену нельзя увидеть невооружённым взглядом из космоса."],
+    q:"Какова общая длина Великой Китайской стены?",
+    opts:["Около 5 000 км","Около 10 000 км","Более 21 000 км","Более 50 000 км"],
+    ans:2
+  },
+  {
+    msgs:["Молния бьёт в Землю около 100 раз каждую секунду.","Температура канала молнии достигает 30 000 градусов — это в пять раз горячее поверхности Солнца.","Молния может ударить в одно место несколько раз подряд.","Высокие деревья и здания притягивают молнии из-за своей высоты."],
+    q:"Как часто молния бьёт в Землю?",
+    opts:["Раз в секунду","10 раз в секунду","100 раз в секунду","1000 раз в секунду"],
+    ans:2
+  },
+  {
+    msgs:["Антарктида — самый холодный, ветреный и сухой континент на Земле.","Под ледяным покровом толщиной до 4 километров скрыты горы и озёра.","Здесь практически нет осадков — технически это пустыня.","Антарктида содержит около 70% всех пресных вод планеты."],
+    q:"Что содержит Антарктида?",
+    opts:["70% мировой нефти","70% пресной воды планеты","70% мирового льда","70% мирового кислорода"],
+    ans:1
+  },
+  {
+    msgs:["Мёд — единственный продукт питания, который не портится со временем.","Археологи находили мёд возрастом более трёх тысяч лет в египетских гробницах.","Одна пчелиная семья может произвести до 30 килограммов мёда в год.","Высокое содержание сахара и низкая влажность делают мёд природным консервантом."],
+    q:"Почему мёд не портится?",
+    opts:["Из-за специальных ферментов пчёл","Из-за высокого содержания сахара и низкой влажности","Из-за особого запаха","Из-за воска в составе"],
+    ans:1
+  },
+  {
+    msgs:["Океанские течения действуют как гигантский конвейер тепла.","Течение Гольфстрим согревает Западную Европу.","Без него климат Британии был бы таким же холодным, как в Канаде.","Изменение климата может нарушить эту глобальную систему течений."],
+    q:"Что делает течение Гольфстрим?",
+    opts:["Охлаждает Европу","Согревает Западную Европу","Создаёт штормы","Переносит рыбу"],
+    ans:1
+  }
+];
+
+const NOTIFS = {
+  A: { bg:"#8e8e93", icon:"N", msg:"Новое сообщение",   badge:false, bc:null,      bt:null,  urgent:false },
+  B: { bg:"#007AFF", icon:"N", msg:"3 новых сообщения", badge:true,  bc:"#007AFF", bt:"3",   urgent:false },
+  C: { bg:"#ff3b30", icon:"!",  msg:"Срочное сообщение!", badge:true, bc:"#ff3b30", bt:"!",  urgent:true  }
+};
+
+// ══════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════
+
+const pid = Math.random().toString(36).substr(2,9);
+let asrsIdx = 0, asrsSel = null, asrsScores = [];
+let trialSeq = shuffle(['A','A','A','A','A','B','B','B','B','B','C','C','C','C','C']);
+let curTrialIdx = 0;
+let curNotif = null, notifT = null, notifTimer = null, ratingSelected = null;
+let rows = [];
+const RATING_LABELS = {
+  A:'серые уведомления («Новое сообщение»)',
+  B:'синие уведомления («3 новых сообщения»)',
+  C:'красные уведомления («Срочное сообщение!»)'
+};
+let curRatingIdx = 0;
+let endRatings = {A:'',B:'',C:''};
+
+// ══════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════
+
+function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a; }
+function showScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById('screen-'+id).classList.add('active'); }
+
+// ══════════════════════════════════════════
+//  CLOCK
+// ══════════════════════════════════════════
+
+function tick(){
+  const n=new Date();
+  document.getElementById('clock').textContent=n.getHours()+':'+String(n.getMinutes()).padStart(2,'0');
+}
+tick(); setInterval(tick,15000);
+
+// ══════════════════════════════════════════
+//  ASRS
+// ══════════════════════════════════════════
+
+function renderAsrs(){
+  document.getElementById('asrs-prog').style.width=(asrsIdx/ASRS.length*100)+'%';
+  document.getElementById('asrs-q').textContent=ASRS[asrsIdx];
+  const el=document.getElementById('asrs-opts');
+  el.innerHTML='';
+  asrsSel=null;
+  document.getElementById('asrs-next').style.display='none';
+  ASRS_OPTS.forEach((o,i)=>{
+    const b=document.createElement('button');
+    b.className='opt-btn'; b.textContent=o;
+    b.onclick=()=>{
+      document.querySelectorAll('.opt-btn').forEach(x=>x.classList.remove('selected'));
+      b.classList.add('selected'); asrsSel=i;
+      document.getElementById('asrs-next').style.display='block';
+    };
+    el.appendChild(b);
+  });
+}
+
+function nextAsrs(){
+  if(asrsSel===null)return;
+  asrsScores.push(asrsSel);
+  asrsIdx++;
+  if(asrsIdx>=ASRS.length){ showScreen('instructions'); }
+  else { renderAsrs(); }
+}
+
+// ══════════════════════════════════════════
+//  EXPERIMENT
+// ══════════════════════════════════════════
+
+function startExp(){ showScreen('trial'); runTrial(); }
+
+function runTrial(){
+  const trial = TEXTS[curTrialIdx % TEXTS.length];
+  curNotif = trialSeq[curTrialIdx];
+
+  document.getElementById('trial-prog').style.width=(curTrialIdx/15*100)+'%';
+
+  const body=document.getElementById('chat-body');
+  body.innerHTML='';
+  trial.msgs.forEach((t,i)=>{
+    setTimeout(()=>{
+      const d=document.createElement('div');
+      d.className='msg'; d.style.animationDelay=(i*60)+'ms'; d.textContent=t;
+      body.appendChild(d);
+      body.scrollTop=body.scrollHeight;
+    },i*350);
+  });
+
+  const delay=8000+Math.random()*2000;
+  notifTimer=setTimeout(()=>fireNotif(curNotif),delay);
+}
+
+function fireNotif(type){
+  const n=NOTIFS[type];
+  const banner=document.getElementById('notif-banner');
+  const icon=document.getElementById('n-icon');
+  const msg=document.getElementById('n-msg');
+  const badge=document.getElementById('n-badge');
+
+  icon.style.background=n.bg; icon.textContent=n.icon;
+  msg.textContent=n.msg;
+
+  if(n.badge){ badge.style.display='flex'; badge.style.background=n.bc; badge.textContent=n.bt; }
+  else { badge.style.display='none'; }
+
+  banner.className=n.urgent?'urgent':'';
+  banner.onclick=()=>onTap();
+
+  notifT=Date.now();
+  banner.classList.add('show');
+  notifTimer=setTimeout(()=>dismissNotif(false),4000);
+}
+
+function onTap(){
+  clearTimeout(notifTimer);
+  const rt=Date.now()-notifT;
+  saveRow(true,rt);
+  sendLatestRow();
+  dismissNotif(true);
+}
+
+function dismissNotif(tapped){
+  const b=document.getElementById('notif-banner');
+  b.classList.remove('show','urgent'); b.onclick=null;
+  if(!tapped) saveRow(false,null);
+  sendLatestRow();
+  setTimeout(()=>showQuestion(),600);
+}
+
+function getDevice(){
+  const ua=navigator.userAgent;
+  if(/Mobi|Android|iPhone|iPad/i.test(ua)) return 'mobile';
+  if(/Tablet|iPad/i.test(ua)) return 'tablet';
+  return 'desktop';
+}
+function saveRow(tapped,rt){
+  rows.push({
+    participant_id:pid,
+    asrs_score:asrsScores.reduce((a,b)=>a+b,0),
+    trial_number:curTrialIdx+1,
+    notification_type:trialSeq[curTrialIdx],
+    tapped:tapped?1:0,
+    reaction_time_ms:rt!==null?Math.round(rt):'',
+    question_correct:'',
+    rating_type_a:'',
+    rating_type_b:'',
+    rating_type_c:'',
+    device:getDevice(),
+    completed:0
+  });
+}
+
+function showQuestion(){
+  const trial=TEXTS[curTrialIdx%TEXTS.length];
+  showScreen('question');
+  document.getElementById('q-title').textContent=trial.q;
+  const el=document.getElementById('q-opts');
+  el.innerHTML='';
+  trial.opts.forEach((o,i)=>{
+    const b=document.createElement('button');
+    b.className='q-opt'; b.textContent=o;
+    b.onclick=()=>{
+      el.querySelectorAll('.q-opt').forEach(x=>{x.disabled=true;});
+      const ok=i===trial.ans;
+      b.classList.add(ok?'correct':'wrong');
+      if(!ok) el.children[trial.ans].classList.add('correct');
+      rows[rows.length-1].question_correct=ok?1:0;
+      setTimeout(()=>advance(),1200);
+    };
+    el.appendChild(b);
+  });
+}
+
+function advance(){
+  curTrialIdx++;
+  if(curTrialIdx>=15){ showEndRating(); }
+  else { showScreen('trial'); runTrial(); }
+}
+
+// ── End-of-experiment ratings (one per notification type) ──
+
+function showEndRating(){
+  const type = ['A','B','C'][curRatingIdx];
+  const n = NOTIFS[type];
+  showScreen('rating');
+  ratingSelected=null;
+  document.getElementById('r-next').style.display='none';
+  document.getElementById('r-title').textContent = 'Последний шаг ('+(curRatingIdx+1)+' из 3)';
+  document.getElementById('r-sub').textContent = 'Насколько сильно вам хотелось нажать на это уведомление?';
+
+  // Render notification preview
+  const preview = document.getElementById('r-preview');
+  const badgeHTML = n.badge
+    ? `<div style="font-size:11px;font-weight:700;color:white;background:${n.bc};min-width:20px;height:20px;border-radius:10px;padding:0 5px;display:flex;align-items:center;justify-content:center;">${n.bt}</div>`
+    : '';
+  preview.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;background:rgba(245,245,247,0.95);border-radius:14px;padding:12px 14px;border:1px solid #e5e5ea;margin:0 auto;max-width:320px;">
+      <div style="width:36px;height:36px;border-radius:8px;background:${n.bg};display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:white;flex-shrink:0;">${n.icon}</div>
+      <div style="flex:1;">
+        <div style="font-size:11px;color:#6e6e73;font-weight:600;text-transform:uppercase;letter-spacing:.04em;">Nova</div>
+        <div style="font-size:14px;color:#1c1c1e;font-weight:500;margin-top:1px;">${n.msg}</div>
+      </div>
+      ${badgeHTML}
+    </div>`;
+
+  const row=document.getElementById('r-row');
+  row.innerHTML='';
+  for(let i=1;i<=7;i++){
+    const b=document.createElement('button');
+    b.className='r-btn'; b.textContent=i;
+    b.onclick=()=>{
+      document.querySelectorAll('.r-btn').forEach(x=>x.classList.remove('sel'));
+      b.classList.add('sel'); ratingSelected=i;
+      document.getElementById('r-next').style.display='block';
+    };
+    row.appendChild(b);
+  }
+}
+
+function submitRating(){
+  if(!ratingSelected)return;
+  const type=['A','B','C'][curRatingIdx];
+  endRatings[type]=ratingSelected;
+  // Write ratings into all rows of this type
+  rows.forEach(r=>{ if(r.notification_type===type) r['rating_type_'+type.toLowerCase()]=ratingSelected; });
+  curRatingIdx++;
+  if(curRatingIdx>=3){
+    rows.forEach(r=>{ r.completed=1; });
+    renderAsrsResult();
+    showScreen('end');
+    setTimeout(sendData, 500);
+  }
+  else { showEndRating(); }
+}
+
+// ══════════════════════════════════════════
+//  ASRS RESULT
+// ══════════════════════════════════════════
+
+function renderAsrsResult(){
+  const score = asrsScores.reduce((a,b)=>a+b,0);
+
+  document.getElementById('asrs-score-num').textContent = score;
+
+  const bar = document.getElementById('asrs-bar');
+  const pct = Math.round(score/24*100);
+
+  let color, label, desc;
+  if(score <= 8){
+    color='#34c759';
+    label='Симптомы СДВГ маловероятны';
+    desc='Ваш результат находится в диапазоне, характерном для большинства взрослых без симптомов СДВГ.';
+  } else if(score <= 13){
+    color='#ff9f0a';
+    label='Умеренный уровень симптомов';
+    desc='Ваш результат указывает на некоторые характерные черты — рассеянность, трудности с организацией. Это не обязательно означает СДВГ.';
+  } else {
+    color='#ff3b30';
+    label='Высокий уровень симптомов';
+    desc='Ваш результат выше порогового значения (14+), что может указывать на выраженные симптомы СДВГ. Это скрининг, а не диагноз — для точной оценки нужна консультация специалиста.';
+  }
+
+  bar.style.background = color;
+  setTimeout(()=>{ bar.style.width = pct+'%'; }, 100);
+  document.getElementById('asrs-label').style.color = color;
+  document.getElementById('asrs-label').textContent = label;
+  document.getElementById('asrs-desc').textContent = desc;
+}
+
+
+
+function sendLatestRow(){
+  const SCRIPT_URL="https://script.google.com/macros/s/AKfycbxjwFeQfyWDdfc3VMuU1CUyuM3oQ-M3yirhWBkmYjJKGPC7M_rYLgVvT1S3MBCcw1DTJg/exec";
+  if(!rows.length) return;
+  fetch(SCRIPT_URL,{
+    method:"POST",
+    mode:"no-cors",
+    body:JSON.stringify({rows:[rows[rows.length-1]]}),
+    headers:{"Content-Type":"application/json"}
+  });
+}
+
+function sendData(){
+  const SCRIPT_URL="https://script.google.com/macros/s/AKfycbxjwFeQfyWDdfc3VMuU1CUyuM3oQ-M3yirhWBkmYjJKGPC7M_rYLgVvT1S3MBCcw1DTJg/exec";
+  const btn=document.getElementById("send-btn");
+  btn.textContent="Отправляю...";
+  btn.disabled=true;
+  fetch(SCRIPT_URL,{
+    method:"POST",
+    mode:"no-cors",
+    body:JSON.stringify({rows:rows}),
+    headers:{"Content-Type":"application/json"}
+  }).then(()=>{
+    btn.textContent="Данные отправлены ✓";
+    btn.style.background="#34c759";
+  }).catch(()=>{
+    btn.textContent="Ошибка — попробуйте ещё раз";
+    btn.style.background="#ff3b30";
+    btn.disabled=false;
+  });
+}
+
+// ══════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════
+
+renderAsrs();
+</script>
+</body>
+</html>
