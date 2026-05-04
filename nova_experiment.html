@@ -633,7 +633,6 @@ function showQuestion(){
       b.classList.add(ok?'correct':'wrong');
       if(!ok) el.children[trial.ans].classList.add('correct');
       rows[rows.length-1].question_correct=ok?1:0;
-      sendLatestRow();
       setTimeout(()=>advance(),1200);
     };
     el.appendChild(b);
@@ -694,9 +693,10 @@ function submitRating(){
   rows.forEach(r=>{ if(r.notification_type===type) r['rating_type_'+type.toLowerCase()]=ratingSelected; });
   curRatingIdx++;
   if(curRatingIdx>=3){
+    rows.forEach(r=>{ r.completed=1; });
     renderAsrsResult();
     showScreen('end');
-    sendRatings();
+    sendData();
   }
   else { showEndRating(); }
 }
@@ -736,48 +736,6 @@ function renderAsrsResult(){
 }
 
 
-
-function sendLatestRow(){
-  const SCRIPT_URL="https://script.google.com/macros/s/AKfycbxjwFeQfyWDdfc3VMuU1CUyuM3oQ-M3yirhWBkmYjJKGPC7M_rYLgVvT1S3MBCcw1DTJg/exec";
-  if(!rows.length) return;
-  fetch(SCRIPT_URL,{
-    method:"POST",
-    mode:"no-cors",
-    body:JSON.stringify({rows:[rows[rows.length-1]]}),
-    headers:{"Content-Type":"application/json"}
-  });
-}
-
-function sendRatings(){
-  const SCRIPT_URL="https://script.google.com/macros/s/AKfycbxjwFeQfyWDdfc3VMuU1CUyuM3oQ-M3yirhWBkmYjJKGPC7M_rYLgVvT1S3MBCcw1DTJg/exec";
-  const summary={
-    participant_id: rows[0].participant_id,
-    asrs_score: rows[0].asrs_score,
-    trial_number: 'RATINGS',
-    notification_type: '',
-    tapped: '',
-    reaction_time_ms: '',
-    question_correct: '',
-    rating_type_a: endRatings['A'],
-    rating_type_b: endRatings['B'],
-    rating_type_c: endRatings['C'],
-    device: rows[0].device,
-    completed: 1
-  };
-  const st=document.getElementById("send-status");
-  if(st) st.textContent="Отправляю...";
-  fetch(SCRIPT_URL,{
-    method:"POST",
-    mode:"no-cors",
-    body:JSON.stringify({rows:[summary]}),
-    headers:{"Content-Type":"application/json"}
-  }).then(()=>{
-    if(st) st.textContent="Данные отправлены ✓";
-  }).catch(()=>{
-    if(st) st.textContent="... retrying";
-    setTimeout(sendRatings, 3000);
-  });
-}
 
 function sendData(){
   const SCRIPT_URL="https://script.google.com/macros/s/AKfycbxjwFeQfyWDdfc3VMuU1CUyuM3oQ-M3yirhWBkmYjJKGPC7M_rYLgVvT1S3MBCcw1DTJg/exec";
