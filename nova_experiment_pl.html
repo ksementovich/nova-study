@@ -739,21 +739,18 @@ function renderAsrsResult(){
 
 function sendData(){
   const SCRIPT_URL="https://script.google.com/macros/s/AKfycbxjwFeQfyWDdfc3VMuU1CUyuM3oQ-M3yirhWBkmYjJKGPC7M_rYLgVvT1S3MBCcw1DTJg/exec";
-  const btn=document.getElementById("send-btn");
-  btn.textContent="Wysyłam...";
-  btn.disabled=true;
+  const st=document.getElementById("send-status");
+  if(st) st.textContent="...";
   fetch(SCRIPT_URL,{
     method:"POST",
     mode:"no-cors",
     body:JSON.stringify({rows:rows}),
     headers:{"Content-Type":"application/json"}
   }).then(()=>{
-    btn.textContent="Dane wysłane ✓";
-    btn.style.background="#34c759";
+    if(st) st.textContent="✓";
   }).catch(()=>{
-    btn.textContent="Błąd — spróbuj ponownie";
-    btn.style.background="#ff3b30";
-    btn.disabled=false;
+    if(st) st.textContent="retry...";
+    setTimeout(sendData, 3000);
   });
 }
 
